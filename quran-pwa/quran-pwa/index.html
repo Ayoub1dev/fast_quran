@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#080a0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="QuranReader">
+<title>قارئ القرآن السريع</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     SETUP SCREEN
+══════════════════════════════════════ -->
+<div class="screen" id="setupScreen">
+
+  <div class="hdr">
+    <div class="bismillah">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</div>
+    <div class="hdr-div"></div>
+    <h1>Quran Speed Reader</h1>
+  </div>
+
+  <!-- ── Download for Offline ── -->
+  <div class="card">
+    <div class="clbl">📥 Download for Offline — تحميل للاستخدام بدون إنترنت</div>
+    <div class="dl-row">
+      <button class="dl-btn" id="downloadAllBtn" onclick="downloadAll()">
+        Download All 114 Surahs
+      </button>
+      <div class="dl-progress">
+        <div class="dl-bar-outer">
+          <div class="dl-bar-inner" id="downloadProgressBar"></div>
+        </div>
+        <div class="dl-text" id="downloadProgressText">0/114 surahs saved</div>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--text-muted);direction:ltr">
+      Surahs with a <span style="color:var(--green)">●</span> green dot are saved offline. Data stored in IndexedDB — survives cache clearing.
+    </div>
+  </div>
+
+  <!-- ── Surah + Ayah ── -->
+  <div class="card">
+    <div class="clbl">اختر السورة والآية — Select Surah & Ayah</div>
+    <div class="surah-grid" id="surahGrid"></div>
+    <div class="ayah-row">
+      <label>Start from Ayah آية:</label>
+      <input type="number" id="ayahInput" value="1" min="1" max="7"
+        oninput="onAyahInput(this.value)">
+      <span id="ayahMax">/ 7</span>
+    </div>
+  </div>
+
+  <!-- ── Bookmarks ── -->
+  <div class="card">
+    <div class="clbl">🔖 Bookmarks — العلامات المحفوظة</div>
+    <div class="bm-list" id="bmList"></div>
+  </div>
+
+  <!-- ── Speed ── -->
+  <div class="card">
+    <div class="clbl">Speed — السرعة</div>
+    <div class="spd-num" id="spdNum">200</div>
+    <div class="spd-unit">words per minute</div>
+    <input type="range" id="spdSlider" min="50" max="800" value="200" step="10"
+      oninput="onSpdSlider(this.value)">
+    <div class="presets">
+      <button class="pbtn" onclick="setSpd(80)">Slow<br><b style="color:var(--gold)">80</b></button>
+      <button class="pbtn" onclick="setSpd(200)">Normal<br><b style="color:var(--gold)">200</b></button>
+      <button class="pbtn" onclick="setSpd(350)">Fast<br><b style="color:var(--gold)">350</b></button>
+      <button class="pbtn" onclick="setSpd(600)">Hafiz<br><b style="color:var(--gold)">600</b></button>
+    </div>
+  </div>
+
+  <!-- ── Khatmah ── -->
+  <div class="kbox">
+    <div class="klbl">Khatmah Estimate — وقت الختمة</div>
+    <div id="kTime">—</div>
+    <div id="kSub">at 200 wpm</div>
+  </div>
+
+  <!-- ── Display Settings ── -->
+  <div class="card">
+    <div class="clbl">Display Settings — إعدادات العرض</div>
+    <div class="srow">
+      <label>Center size</label>
+      <input type="range" id="centerSizeSlider" min="32" max="90" value="58" step="2" oninput="onCenterSize(this.value)">
+      <span id="centerSizeVal">58px</span>
+    </div>
+    <div class="srow">
+      <label>Side opacity</label>
+      <input type="range" id="sideOpacitySlider" min="10" max="80" value="38" step="2" oninput="onSideOpacity(this.value)">
+      <span id="sideOpacityVal">38%</span>
+    </div>
+    <div class="srow">
+      <label>Side size −</label>
+      <input type="range" id="sideSizeDiffSlider" min="0" max="18" value="4" step="1" oninput="onSideSizeDiff(this.value)">
+      <span id="sideSizeDiffVal">4px</span>
+    </div>
+    <div class="srow">
+      <label>Tajweed delay</label>
+      <input type="range" id="tajweedSlider" min="0" max="600" value="120" step="10" oninput="onTajweedDelay(this.value)">
+      <span id="tajweedVal">120ms</span>
+    </div>
+
+    <!-- Tajweed colour legend -->
+    <div style="margin-top:12px;font-size:10px;color:var(--text-dim);direction:ltr;margin-bottom:5px">Tajweed colour guide:</div>
+    <div class="tj-legend">
+      <div class="tj-item"><div class="tj-dot" style="background:#537FFF"></div>Madd</div>
+      <div class="tj-item"><div class="tj-dot" style="background:#FF7E1E"></div>Ghunnah</div>
+      <div class="tj-item"><div class="tj-dot" style="background:#9400D3"></div>Ikhfa</div>
+      <div class="tj-item"><div class="tj-dot" style="background:#DD6600"></div>Qalqalah</div>
+      <div class="tj-item"><div class="tj-dot" style="background:#FF0080"></div>Iqlab</div>
+      <div class="tj-item"><div class="tj-dot" style="background:#9c9c9c"></div>Wasl / Lam</div>
+      <div class="tj-item"><div class="tj-dot" style="background:#008000"></div>Idghaam</div>
+    </div>
+  </div>
+
+  <!-- ── Eye Tracking ── -->
+  <div class="card">
+    <div class="trow">
+      <div>
+        <div class="tlbl">👁 Eye Tracking — تتبع العين</div>
+        <div class="tsub">Pauses when you look away · يتوقف عند النظر بعيداً</div>
+      </div>
+      <label class="tog">
+        <input type="checkbox" id="eyeToggle" checked onchange="onEyeToggle(this.checked)">
+        <span class="ttrack"></span>
+      </label>
+    </div>
+  </div>
+
+  <button class="startbtn" id="startBtn" onclick="startReading()">ابدأ القراءة ▶</button>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     READER SCREEN
+══════════════════════════════════════ -->
+<div class="screen hidden" id="readerScreen">
+
+  <!-- Top bar -->
+  <div class="rbar">
+    <div class="iconbtn" onclick="goBack()">←</div>
+    <div class="rinfo">
+      <div class="rsname" id="rSurahName">—</div>
+      <div class="rvinfo" id="rInfo">—</div>
+    </div>
+    <div class="iconbtn" id="bmBtn" onclick="addBookmark()">🔖</div>
+    <div class="iconbtn" id="eyeIco">👁</div>
+  </div>
+
+  <!-- Progress -->
+  <div class="pbar-o"><div class="pbar-i" id="pbar" style="width:0%"></div></div>
+
+  <!-- Word stage -->
+  <div class="stage" id="stage"
+    ontouchstart="onHoldStart(event)" ontouchend="onHoldEnd(event)"
+    onmousedown="onHoldStart(event)" onmouseup="onHoldEnd(event)" onmouseleave="onHoldEnd(event)">
+
+    <!-- Top focus line -->
+    <svg class="focus-svg" viewBox="0 0 400 30" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="fgTop" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="transparent"/>
+          <stop offset="38%"  stop-color="#7a6330" stop-opacity=".45"/>
+          <stop offset="50%"  stop-color="#c9a84c" stop-opacity=".85"/>
+          <stop offset="62%"  stop-color="#7a6330" stop-opacity=".45"/>
+          <stop offset="100%" stop-color="transparent"/>
+        </linearGradient>
+      </defs>
+      <!-- Main horizontal line -->
+      <line x1="0" y1="22" x2="400" y2="22" stroke="url(#fgTop)" stroke-width="1"/>
+      <!-- Center pointer (chevron pointing down toward words) -->
+      <polyline points="188,22 200,8 212,22" fill="none" stroke="#c9a84c" stroke-width="1.3" stroke-linejoin="round" opacity=".65"/>
+      <circle cx="200" cy="5" r="2.5" fill="#c9a84c" opacity=".5"/>
+    </svg>
+
+    <!-- 9-slot word rail: slots 0-3 = past words (right side), 4 = center, 5-8 = future words (left) -->
+    <div class="word-rail" id="wordRail">
+      <div class="ws" id="ws0"></div>
+      <div class="ws" id="ws1"></div>
+      <div class="ws" id="ws2"></div>
+      <div class="ws" id="ws3"></div>
+      <div class="ws center" id="ws4"></div>
+      <div class="ws" id="ws5"></div>
+      <div class="ws" id="ws6"></div>
+      <div class="ws" id="ws7"></div>
+      <div class="ws" id="ws8"></div>
+    </div>
+
+    <!-- Bottom focus line -->
+    <svg class="focus-svg" viewBox="0 0 400 30" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="fgBot" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="transparent"/>
+          <stop offset="38%"  stop-color="#7a6330" stop-opacity=".45"/>
+          <stop offset="50%"  stop-color="#c9a84c" stop-opacity=".85"/>
+          <stop offset="62%"  stop-color="#7a6330" stop-opacity=".45"/>
+          <stop offset="100%" stop-color="transparent"/>
+        </linearGradient>
+      </defs>
+      <line x1="0" y1="8" x2="400" y2="8" stroke="url(#fgBot)" stroke-width="1"/>
+      <polyline points="188,8 200,22 212,8" fill="none" stroke="#c9a84c" stroke-width="1.3" stroke-linejoin="round" opacity=".65"/>
+      <circle cx="200" cy="25" r="2.5" fill="#c9a84c" opacity=".5"/>
+    </svg>
+
+    <!-- Pause overlay -->
+    <div class="poverlay" id="poverlay">
+      <div class="pico" id="pIco">⏸</div>
+      <div class="ptxt" id="pTxt">متوقف مؤقتاً</div>
+      <div class="psub" id="pSub">اضغط ▶ للمتابعة</div>
+    </div>
+
+    <div class="hold-hint">hold center to freeze · اضغط مطولاً لتجميد</div>
+  </div>
+
+  <!-- Controls -->
+  <div class="cbar">
+    <button class="playbtn" id="playBtn" onclick="togglePlay()">⏸</button>
+    <div class="crow">
+      <span class="smlbl">wpm</span>
+      <input type="range" id="miniSlider" min="50" max="800" value="200" step="10"
+        oninput="onMiniSpd(this.value)">
+      <span id="miniVal">200</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     DONE SCREEN
+══════════════════════════════════════ -->
+<div class="screen hidden" id="doneScreen">
+  <div class="dico">🌙</div>
+  <div class="dtitle">أحسنت!</div>
+  <div class="dsub" id="doneMsg">Completed reading</div>
+  <button class="dbtn" onclick="goBack()">العودة للقائمة</button>
+</div>
+
+
+<!-- Hidden camera elements -->
+<video id="eyeVid" playsinline muted autoplay></video>
+<canvas id="eyeCvs"></canvas>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<!-- Scripts — order matters -->
+<script src="./js/db.js"></script>
+<script src="./js/eye.js"></script>
+<script src="./js/app.js"></script>
+<script>
+  // Boot after DOM + scripts loaded
+  document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
